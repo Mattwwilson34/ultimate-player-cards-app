@@ -31,3 +31,9 @@ PlayerSchema.virtual('name').get(function () {
 
   return fullname;
 });
+
+PlayerSchema.virtual('url').get(function () {
+  return `/players/${this._id}`;
+});
+
+//todo Create virtual for players age
