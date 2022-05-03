@@ -13,6 +13,21 @@ let PlayerSchema = new Schema({
   bio: { type: String, maxlength: 1000 },
   position: { type: String, required: true, maxlength: 100 },
   nickname: { type: String, required: true, maxlength: 50 },
+});
 
-  // Virtual for player's full name
+// Virtual for player's full name
+PlayerSchema.virtual('name').get(function () {
+  let fullname = '';
+
+  // set fullname to combined name if first and last are not null
+  if (this.first_name && this.last_name) {
+    fullname = `${this.fullname}, ${this.last_name}`;
+  }
+
+  // set fullname to empty string if first/last names are null
+  if (!this.first_name || !this.last_name) {
+    fullname = '';
+  }
+
+  return fullname;
 });
