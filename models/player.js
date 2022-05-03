@@ -37,3 +37,6 @@ PlayerSchema.virtual('url').get(function () {
 });
 
 //todo Create virtual for players age
+
+//Export model
+module.exports = mongoose.model('Player', PlayerSchema);
