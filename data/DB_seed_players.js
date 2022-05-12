@@ -1,142 +1,68 @@
-const names = require('./names.js');
-const cities = require('./us_cities.js');
-const states = require('./us_states.js');
-const colleges = require('./colleges.js');
-const positions = require('./positions.js');
+// RUN seedDB FUNTION TO RESEED DB
+
+const mongoose = require('mongoose');
+
+// DB connection
+const connectToMongoose = require('../utils/mongoose_connect.js');
+connectToMongoose();
+
+// Require models
+const Player = require('../models/player');
+const Stat = require('../models/stats');
+const Team = require('../models/team');
+const Division = require('../models/division');
+
+// Require Utility Functions/data
+const getArrayOfPlayerModels = require('./players.js');
+const getArrayOfPlayerStatsModels = require('./player_stats');
 const teams = require('./teams.js');
+const divisions = require('./divisions.js');
 
-// Returns random number
-function getRandomIntInclusive(min, max) {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min + 1) + min); //The maximum is inclusive and the minimum is inclusive
-}
+const seedDB = async () => {
+  // Empty Database
+  await emptyDB();
 
-//----------PLAYER---------//
+  // Get arrays of monogoose models
+  let divisionsArray = divisions.getDivisionModels();
+  let teamsArray = teams.getArrayOfTeamModels();
 
-// Get random first name
-const getRandomFirstName = () => {
-  const randomNumber = getRandomIntInclusive(0, names.length);
-  return names[randomNumber].first_name;
+  // Set divisions teams and teams division
+  teamsArray.forEach((team) => {
+    if (divisions.SOUTH_DIVISION.includes(team.name)) {
+      divisionsArray[0].teams.push(team);
+      team.division = divisionsArray[0];
+    } else if (divisions.CENTRAL_DIVISION.includes(team.name)) {
+      divisionsArray[1].teams.push(team);
+      team.division = divisionsArray[1];
+    } else if (divisions.EAST_DIVISION.includes(team.name)) {
+      divisionsArray[2].teams.push(team);
+      team.division = divisionsArray[2];
+    } else if (divisions.WEST_DIVISION.includes(team.name)) {
+      divisionsArray[3].teams.push(team);
+      team.division = divisionsArray[3];
+    }
+  });
+
+  // Set teams players and players stats
+  teamsArray.forEach(async (team) => {
+    let players = getArrayOfPlayerModels(25);
+    let statsArray = getArrayOfPlayerStatsModels(25);
+    players.forEach((player, i) => {
+      team.players.push(player);
+      player.stats = statsArray[i]._id;
+      player.team = team._id;
+      statsArray[i].player = player._id;
+    });
+    await Player.create(players);
+    await Stat.create(statsArray);
+  });
+  await Team.create(teamsArray);
+  await Division.create(divisionsArray);
 };
 
-// Get random last name
-const getRandomLastName = () => {
-  const randomNumber = getRandomIntInclusive(0, names.length);
-  return names[randomNumber].last_name;
+const emptyDB = async () => {
+  await Player.deleteMany({});
+  await Team.deleteMany({});
+  await Stat.deleteMany({});
+  await Division.deleteMany({});
 };
-
-// Get random nickname
-const getRandomNickname = () => {
-  const randomNumber = getRandomIntInclusive(0, names.length);
-  return names[randomNumber].alias;
-};
-
-// Get random date of birth
-const getRandomDateOfBirth = () => {
-  const year = getRandomIntInclusive(1982, 2004);
-  const month = getRandomIntInclusive(1, 12);
-  const day = getRandomIntInclusive(0, 28); // keeping days in month <= 28 for simplicity
-  return new Date(year, month, day);
-};
-
-// Get random city
-const getRandomCity = () => {
-  const randomNumber = getRandomIntInclusive(0, cities.length);
-  return cities[randomNumber];
-};
-
-// Get random college
-const getRandomCollege = () => {
-  const randomNumber = getRandomIntInclusive(0, colleges.length);
-  return colleges[randomNumber].institution;
-};
-
-// Get random position
-const getRandomPosition = () => {
-  const randomNumber = getRandomIntInclusive(0, positions.length);
-  return positions[randomNumber];
-};
-
-// Returns random player object
-const getRandomPlayer = () => {
-  return {
-    first_name: getRandomFirstName(),
-    first_last: getRandomLastName(),
-    DOB: getRandomDateOfBirth(),
-    city: getRandomCity(),
-    height: getRandomIntInclusive(64, 86), // inches
-    weight: getRandomIntInclusive(120, 275), // pounds
-    college: getRandomCollege(),
-    bio: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-    position: getRandomPosition(),
-    nickname: getRandomNickname(),
-  };
-};
-
-// generate array of player objects
-const getArrayOfPlayerObjects = () => {
-  const playerArray = [];
-  for (let i = 0; i < 50; i++) {
-    playerArray.push(getRandomPlayer());
-  }
-  console.log(playerArray);
-};
-
-//----------PLAYER STATS---------//
-
-// Return random player stats object
-const getRandomPlayerStats = () => {
-  return {
-    acceleration: getRandomIntInclusive(20, 100),
-    stamina: getRandomIntInclusive(20, 100),
-    strength: getRandomIntInclusive(20, 100),
-    balance: getRandomIntInclusive(20, 100),
-    sprintSpeed: getRandomIntInclusive(20, 100),
-    agillity: getRandomIntInclusive(20, 100),
-    jumping: getRandomIntInclusive(20, 100),
-    marking: getRandomIntInclusive(20, 100),
-    deepDef: getRandomIntInclusive(20, 100),
-    midDef: getRandomIntInclusive(20, 100),
-    handlerDef: getRandomIntInclusive(20, 100),
-    shortPass: getRandomIntInclusive(20, 100),
-    longPass: getRandomIntInclusive(20, 100),
-    skillThrows: getRandomIntInclusive(20, 100),
-  };
-};
-
-// generate array of player objects
-const getArrayOfPlayerStats = () => {
-  const playerStatsArray = [];
-  for (let i = 0; i < 50; i++) {
-    playerStatsArray.push(getRandomPlayerStats());
-  }
-  console.log(playerStatsArray);
-};
-
-//----------TEAM---------//
-
-// Returns random team object
-const getRandomTeam = () => {
-  return {
-    name: '',
-    wins: getRandomIntInclusive(0, 14),
-    losses: getRandomIntInclusive(0, 14),
-    points: getRandomIntInclusive(0, 200),
-    pointsAgainst: getRandomIntInclusive(0, 200),
-  };
-};
-
-// generate array of team objects
-const getArrayOfTeams = () => {
-  const teamArray = [];
-  for (let i = 0; i < teams.length; i++) {
-    const team = getRandomTeam();
-    team.name = teams[i];
-    teamArray.push(team);
-  }
-  console.log(teamArray);
-};
-
-//----------Division---------//
-//todo - save divisions to database
